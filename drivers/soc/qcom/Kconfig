@@ -22,9 +22,30 @@ config RTWO_DTB
 config FOGONA_DTB
     depends on MMI_DEVICE_DTBS
     default n
-    bool "Motorola Mobility Rtwo Device DTB"
+    bool "Motorola Mobility Fogona Device DTB"
     help
         Only include Motorola Fogona device specific device tree.
+
+config DEVON_DTB
+    depends on MMI_DEVICE_DTBS
+    default n
+    bool "Motorola Mobility Devon Device DTB"
+    help
+        Only include Motorola Devon device specific device tree.
+
+config HAWAO_DTB
+    depends on MMI_DEVICE_DTBS
+    default n
+    bool "Motorola Mobility Hawao Device DTB"
+    help
+        Only include Motorola Hawao device specific device tree.
+
+config RHODE_DTB
+    depends on MMI_DEVICE_DTBS
+    default n
+    bool "Motorola Mobility Rhode Device DTB"
+    help
+        Only include Motorola Rhode device specific device tree.
 
 config OBERON_DTB
 	depends on MMI_DEVICE_DTBS
