@@ -436,7 +436,11 @@ struct sde_drm_dest_scaler_data {
  * @post_clamp:         Post-clamp array values
  */
 struct sde_drm_csc_v1 {
+#ifdef __KERNEL__
 	__s64 ctm_coeff[SDE_CSC_MATRIX_COEFF_SIZE];
+#else
+	int64_t ctm_coeff[SDE_CSC_MATRIX_COEFF_SIZE];
+#endif
 	__u32 pre_bias[SDE_CSC_BIAS_SIZE];
 	__u32 post_bias[SDE_CSC_BIAS_SIZE];
 	__u32 pre_clamp[SDE_CSC_CLAMP_SIZE];
