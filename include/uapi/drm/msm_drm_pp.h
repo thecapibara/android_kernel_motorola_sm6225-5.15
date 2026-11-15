@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note */
 /*
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -7,6 +8,12 @@
 #define _MSM_DRM_PP_H_
 
 #include <linux/types.h>
+#include <drm/drm.h>
+
+#define ENABLE_EVENT_SPR_OPR_VALUE
+#define ENABLE_EVENT_INTF_MISR_SIGNATURE
+#define MAX_DSI_DISPLAY 4
+
 /**
  * struct drm_msm_pcc_coeff - PCC coefficient structure for each color
  *                            component.
@@ -31,9 +38,12 @@ struct drm_msm_pcc_coeff {
 	__u32 rgb;
 };
 
+#define PCC_BEFORE (1 << 0)
+
 /**
  * struct drm_msm_pcc - pcc feature structure
- * @flags: for customizing operations
+ * @flags: for customizing operations. Values can be
+ *         - PCC_BEFORE: Operate PCC using a 'before' arrangement
  * @r: red coefficients.
  * @g: green coefficients.
  * @b: blue coefficients.
@@ -48,7 +58,6 @@ struct drm_msm_pcc_coeff {
  * @b_bb: second order coefficients
  */
 #define DRM_MSM_PCC3
-#define NUM_STRUCT_MASK (0xFUL << 60)
 struct drm_msm_pcc {
 	__u64 flags;
 	struct drm_msm_pcc_coeff r;
@@ -119,7 +128,6 @@ struct drm_msm_pa_hsic {
  * @hue_region: Hue qualifier.
  * @sat_region: Saturation qualifier.
  * @val_region: Value qualifier.
- * @flags: for customizing operations.
  */
 #define DRM_MSM_MEMCOL
 struct drm_msm_memcol {
@@ -133,7 +141,6 @@ struct drm_msm_memcol {
 	__u32 hue_region;
 	__u32 sat_region;
 	__u32 val_region;
-	__u64 flags;
 };
 
 #define DRM_MSM_SIXZONE
@@ -141,6 +148,7 @@ struct drm_msm_memcol {
 #define SIXZONE_HUE_ENABLE (1 << 0)
 #define SIXZONE_SAT_ENABLE (1 << 1)
 #define SIXZONE_VAL_ENABLE (1 << 2)
+#define SIXZONE_SV_ENABLE (1 << 3)
 /* struct drm_msm_sixzone_curve - Sixzone HSV adjustment curve structure.
  * @p0: Hue adjustment.
  * @p1: Saturation/Value adjustment.
@@ -155,12 +163,16 @@ struct drm_msm_sixzone_curve {
  *         - SIXZONE_HUE_ENABLE: Enable hue adjustment
  *         - SIXZONE_SAT_ENABLE: Enable saturation adjustment
  *         - SIXZONE_VAL_ENABLE: Enable value adjustment
+ *         - SIXZONE_SV_ENABLE: Enable SV feature
  * @threshold: threshold qualifier.
  * @adjust_p0: Adjustment curve.
  * @adjust_p1: Adjustment curve.
  * @sat_hold: Saturation hold info.
  * @val_hold: Value hold info.
  * @curve: HSV adjustment curve lut.
+ * @sat_adjust_p0: Saturation adjustment curve.
+ * @sat_adjust_p1: Saturation adjustment curve.
+ * @curve_p2: Saturation Mid/Saturation High adjustment
  */
 struct drm_msm_sixzone {
 	__u64 flags;
@@ -170,6 +182,9 @@ struct drm_msm_sixzone {
 	__u32 sat_hold;
 	__u32 val_hold;
 	struct drm_msm_sixzone_curve curve[SIXZONE_LUT_SIZE];
+	__u32 sat_adjust_p0;
+	__u32 sat_adjust_p1;
+	__u32 curve_p2[SIXZONE_LUT_SIZE];
 };
 
 #define GAMUT_3D_MODE_17 1
@@ -415,10 +430,12 @@ struct drm_msm_ad4_cfg {
 };
 
 #define DITHER_MATRIX_SZ 16
+#define DITHER_LUMA_MODE (1 << 0)
 
 /**
  * struct drm_msm_dither - dither feature structure
- * @flags: for customizing operations
+ * @flags: flags for the feature customization, values can be:
+	   -DITHER_LUMA_MODE: Enable LUMA dither mode
  * @temporal_en: temperal dither enable
  * @c0_bitdepth: c0 component bit depth
  * @c1_bitdepth: c1 component bit depth
@@ -478,10 +495,11 @@ struct drm_msm_ad4_roi_cfg {
 #define LTM_DATA_SIZE_3 33
 #define LTM_BUFFER_SIZE 5
 #define LTM_GUARD_BYTES 255
-#define LTM_BLOCK_SIZE 2
+#define LTM_BLOCK_SIZE 4
 
 #define LTM_STATS_SAT (1 << 1)
 #define LTM_STATS_MERGE_SAT (1 << 2)
+#define LTM_HIST_CHECKSUM_SUPPORT (1 << 0)
 
 /*
  * struct drm_msm_ltm_stats_data - LTM stats data structure
@@ -505,6 +523,8 @@ struct drm_msm_ltm_stats_data {
 	__u32 cfg_param_02;
 	__u32 cfg_param_03;
 	__u32 cfg_param_04;
+	__u32 feature_flag;
+	__u32 checksum;
 };
 
 /*
@@ -562,6 +582,95 @@ struct drm_msm_ltm_buffer {
 	__u32 status;
 };
 
+#define SPR_INIT_PARAM_SIZE_1 4
+#define SPR_INIT_PARAM_SIZE_2 5
+#define SPR_INIT_PARAM_SIZE_3 16
+#define SPR_INIT_PARAM_SIZE_4 24
+#define SPR_INIT_PARAM_SIZE_5 32
+#define SPR_FLAG_BYPASS (1 << 0)
+
+/**
+ * struct drm_msm_spr_init_cfg - SPR initial configuration structure
+ *
+ */
+struct drm_msm_spr_init_cfg {
+	__u64 flags;
+	__u16 cfg0;
+	__u16 cfg1;
+	__u16 cfg2;
+	__u16 cfg3;
+	__u16 cfg4;
+	__u16 cfg5;
+	__u16 cfg6;
+	__u16 cfg7;
+	__u16 cfg8;
+	__u16 cfg9;
+	__u32 cfg10;
+	__u16 cfg11[SPR_INIT_PARAM_SIZE_1];
+	__u16 cfg12[SPR_INIT_PARAM_SIZE_1];
+	__u16 cfg13[SPR_INIT_PARAM_SIZE_1];
+	__u16 cfg14[SPR_INIT_PARAM_SIZE_2];
+	__u16 cfg15[SPR_INIT_PARAM_SIZE_5];
+	int cfg16[SPR_INIT_PARAM_SIZE_3];
+	int cfg17[SPR_INIT_PARAM_SIZE_4];
+};
+
+#define FEATURE_DEM
+#define CFG0_PARAM_LEN 8
+#define CFG1_PARAM_LEN 8
+#define CFG1_PARAM0_LEN 153
+#define CFG0_PARAM2_LEN 256
+#define CFG5_PARAM01_LEN 4
+#define CFG3_PARAM01_LEN 4
+
+struct drm_msm_dem_cfg {
+	__u64 flags;
+	__u32 pentile;
+	__u32 cfg0_en;
+	__u32 cfg0_param0_len;
+	__u32 cfg0_param0[CFG0_PARAM_LEN];
+	__u32 cfg0_param1_len;
+	__u32 cfg0_param1[CFG0_PARAM_LEN];
+	__u32 cfg0_param2_len;
+	__u64 cfg0_param2_c0[CFG0_PARAM2_LEN];
+	__u64 cfg0_param2_c1[CFG0_PARAM2_LEN];
+	__u64 cfg0_param2_c2[CFG0_PARAM2_LEN];
+	__u32 cfg0_param3_len;
+	__u32 cfg0_param3_c0[CFG0_PARAM_LEN];
+	__u32 cfg0_param3_c1[CFG0_PARAM_LEN];
+	__u32 cfg0_param3_c2[CFG0_PARAM_LEN];
+	__u32 cfg0_param4_len;
+	__u32 cfg0_param4[CFG0_PARAM_LEN];
+
+	__u32 cfg1_en;
+	__u32 cfg1_high_idx;
+	__u32 cfg1_low_idx;
+	__u32 cfg01_param0_len;
+	__u32 cfg01_param0[CFG1_PARAM_LEN];
+	__u32 cfg1_param0_len;
+	__u32 cfg1_param0_c0[CFG1_PARAM0_LEN];
+	__u32 cfg1_param0_c1[CFG1_PARAM0_LEN];
+	__u32 cfg1_param0_c2[CFG1_PARAM0_LEN];
+
+	__u32 cfg2_en;
+	__u32 cfg3_en;
+	__u32 cfg3_param0_len;
+	__u32 cfg3_param0_a[CFG3_PARAM01_LEN];
+	__u32 cfg3_param0_b[CFG3_PARAM01_LEN];
+	__u32 cfg3_ab_adj;
+	__u32 cfg4_en;
+	__u32 cfg5_en;
+	__u32 cfg5_param0_len;
+	__u32 cfg5_param0[CFG5_PARAM01_LEN];
+	__u32 cfg5_param1_len;
+	__u32 cfg5_param1[CFG5_PARAM01_LEN];
+
+	__u32 c0_depth;
+	__u32 c1_depth;
+	__u32 c2_depth;
+	__u32 src_id;
+};
+
 /**
  * struct drm_msm_ad4_manual_str_cfg - ad4 manual strength config set
  * by user-space client.
@@ -588,6 +697,83 @@ struct drm_msm_rc_mask_cfg {
 	__u64 cfg_param_07;
 	__u32 cfg_param_08;
 	__u64 cfg_param_09[RC_DATA_SIZE_MAX];
+	__u32 height;
+	__u32 width;
+};
+
+#define FP16_SUPPORTED
+#define FP16_GC_FLAG_ALPHA_EN (1 << 0)
+
+ /* FP16 GC mode options */
+#define FP16_GC_MODE_INVALID 0
+#define FP16_GC_MODE_SRGB 1
+#define FP16_GC_MODE_PQ 2
+
+/**
+ * struct drm_msm_fp16_gc - FP16 GC configuration structure
+ * @in flags - Settings flags for FP16 GC
+ * @in mode - Gamma correction mode to use for FP16 GC
+ */
+struct drm_msm_fp16_gc {
+	__u64 flags;
+	__u64 mode;
+};
+
+/**
+ * struct drm_msm_fp16_csc - FP16 CSC configuration structure
+ * @in flags - Settings flags for FP16 CSC. Currently unused
+ * @in cfg_param_0_len - Length of data for cfg_param_0
+ * @in cfg_param_0 - Data for param 0. Max size is FP16_CSC_CFG0_PARAM_LEN
+ * @in cfg_param_1_len - Length of data for cfg_param_1
+ * @in cfg_param_1 - Data for param 1. Max size is FP16_CSC_CFG1_PARAM_LEN
+ */
+#define FP16_CSC_CFG0_PARAM_LEN 12
+#define FP16_CSC_CFG1_PARAM_LEN 8
+struct drm_msm_fp16_csc {
+	__u64 flags;
+	__u32 cfg_param_0_len;
+	__u32 cfg_param_0[FP16_CSC_CFG0_PARAM_LEN];
+	__u32 cfg_param_1_len;
+	__u32 cfg_param_1[FP16_CSC_CFG1_PARAM_LEN];
+};
+
+#define DIMMING_ENABLE (1 << 0)
+#define DIMMING_DISABLE 0
+#define DIMMING_MIN_BL_VALID (1 << 1)
+struct drm_msm_backlight_info {
+	__u32 brightness_max;
+	__u32 brightness;
+	__u32 bl_level_max;
+	__u32 bl_level;
+	__u32 bl_scale;
+	__u32 bl_scale_sv;
+	__u32 status;
+	__u32 min_bl;
+	__u32 bl_scale_max;
+	__u32 bl_scale_sv_max;
+};
+
+#define DIMMING_BL_LUT_LEN 8192
+struct drm_msm_dimming_bl_lut {
+	__u32 length;
+	__u32 mapped_bl[DIMMING_BL_LUT_LEN];
+};
+
+struct drm_msm_opr_value {
+	__u32 num_valid_opr;
+	__u32 opr_value[MAX_DSI_DISPLAY];
+};
+
+#define SDE_MAX_ROI 4
+struct drm_msm_roi {
+	__u32 num_rects;
+	struct drm_clip_rect roi[SDE_MAX_ROI];
+};
+
+struct drm_msm_misr_sign {
+	__u64 num_valid_misr;
+	struct drm_msm_roi roi_list;
+	__u64 misr_sign_value[MAX_DSI_DISPLAY];
 };
 
 #endif /* _MSM_DRM_PP_H_ */
