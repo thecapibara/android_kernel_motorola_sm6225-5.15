@@ -26,6 +26,7 @@
 #define __MSM_DRM_H__
 
 #include "drm.h"
+#include "sde_drm.h"
 
 #if defined(__cplusplus)
 extern "C" {
