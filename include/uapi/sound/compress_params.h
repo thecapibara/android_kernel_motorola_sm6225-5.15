@@ -77,7 +77,11 @@
 #define SND_AUDIOCODEC_BESPOKE               ((__u32) 0x0000000E)
 #define SND_AUDIOCODEC_ALAC                  ((__u32) 0x0000000F)
 #define SND_AUDIOCODEC_APE                   ((__u32) 0x00000010)
-#define SND_AUDIOCODEC_MAX                   SND_AUDIOCODEC_APE
+#define SND_AUDIOCODEC_MP2                   ((__u32) 0x00000013)
+#define SND_AUDIOCODEC_AC3                   ((__u32) 0x00000015)
+#define SND_AUDIOCODEC_DTS                   ((__u32) 0x00000018)
+#define SND_AUDIOCODEC_EAC3                  ((__u32) 0x00000019)
+#define SND_AUDIOCODEC_MAX                   SND_AUDIOCODEC_EAC3
 
 /*
  * Profile and modes are listed with bit masks. This allows for a
@@ -447,5 +451,20 @@ struct snd_codec {
 	union snd_codec_options options;
 	__u32 reserved[3];
 } __attribute__((packed, aligned(4)));
+
+
+#ifndef COMPRESSED_TIMESTAMP_FLAG
+#define COMPRESSED_TIMESTAMP_FLAG 0x0001
+#endif
+#ifndef COMPRESSED_PERF_MODE_FLAG
+#define COMPRESSED_PERF_MODE_FLAG 0x0002
+#endif
+
+struct snd_codec_metadata {
+	__u32 length;
+	__u32 offset;
+	__u64 timestamp;
+	__u32 reserved[4];
+};
 
 #endif
